@@ -1,7 +1,7 @@
 {
   "name": "Caderno de Pontos",
   "short_name": "Pontos",
-  "start_url": "./",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#EDF1EC",
