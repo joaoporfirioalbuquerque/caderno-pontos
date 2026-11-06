@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0D5A6B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pontos">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Caderno de Pontos</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+/* Layout: one narrow field column, sticky timer during a count, bottom sheet for each detection. Bands run dark (near) to light (far). */
+:root{
+  --bg:#EDF1EC; --surface:#FFFFFF; --sunk:#E2E8E2; --ink:#13201A; --muted:#55665C; --line:#C7D2C9;
+  --accent:#0D5A6B; --accent-ink:#FFFFFF; --warn:#A8441A; --ok:#2E6B3A;
+  --b0:#0D4A58; --b1:#1F6E7E; --b2:#4E93A0; --b3:#86B7BF; --b4:#B9D3D7; --bv:#8C7A3E; --b-ink-dark:#FFFFFF; --b-ink-light:#0E2A30;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1411; --surface:#151F1A; --sunk:#1C2822; --ink:#E4ECE6; --muted:#97A89E; --line:#2B3932;
+  --accent:#5DC0D3; --accent-ink:#06262D; --warn:#F0895B; --ok:#7CC98A;
+  --b0:#7FD0DE; --b1:#5BB3C2; --b2:#3E8E9C; --b3:#2C6974; --b4:#22484F; --bv:#C9B26A; --b-ink-dark:#06262D; --b-ink-light:#E4ECE6;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1411; --surface:#151F1A; --sunk:#1C2822; --ink:#E4ECE6; --muted:#97A89E; --line:#2B3932;
+  --accent:#5DC0D3; --accent-ink:#06262D; --warn:#F0895B; --ok:#7CC98A;
+  --b0:#7FD0DE; --b1:#5BB3C2; --b2:#3E8E9C; --b3:#2C6974; --b4:#22484F; --bv:#C9B26A; --b-ink-dark:#06262D; --b-ink-light:#E4ECE6;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 96px;display:flex;flex-direction:column;gap:16px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:700;font-size:28px;letter-spacing:.01em;margin:0;line-height:1}
+h2{font-family:var(--display);font-weight:600;font-size:21px;margin:0;text-wrap:balance}
+.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.tabs{display:flex;background:var(--sunk);border-radius:10px;padding:3px;gap:3px}
+.tabs button{border:0;background:transparent;color:var(--muted);font:700 14px var(--body);padding:8px 14px;border-radius:8px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgb(0 0 0 / .12)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:700}
+input[type=text],input[type=number],input[type=search],textarea{font:16px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:64px}
+input:focus-visible,textarea:focus-visible,button:focus-visible,.filebtn:focus-within{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{font:700 16px var(--body);border-radius:10px;padding:12px 16px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.warn{background:var(--warn);color:#fff;border-color:var(--warn)}
+.btn.ghost{background:transparent}
+.btn.block{width:100%}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.hint{font-size:14px;color:var(--muted);margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:700 15px var(--body);border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:8px 14px;cursor:pointer;min-height:40px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+/* location */
+.loc{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:baseline;padding:12px;border-radius:10px;background:var(--sunk)}
+.loc .coords{font-family:var(--mono);font-size:17px;font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}
+.loc .src{font-size:13px;color:var(--muted);grid-column:1/-1}
+.loc.empty .coords{font-family:var(--body);color:var(--muted);font-size:15px}
+.acc{font-family:var(--mono);font-size:13px;padding:2px 8px;border-radius:999px;background:var(--surface);border:1px solid var(--line);white-space:nowrap}
+.acc.good{color:var(--ok)} .acc.bad{color:var(--warn)}
+.methods{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.filebtn{position:relative;overflow:hidden}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
+.thumb{width:100%;max-height:160px;object-fit:cover;border-radius:8px;display:block}
+a{color:var(--accent)}
+/* bands editor */
+.bandbar{display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.bandbar span{flex:1;text-align:center;font:600 14px var(--display);padding:8px 2px;letter-spacing:.02em;white-space:nowrap}
+.edges{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.edges input{width:76px;text-align:center;font-family:var(--mono)}
+/* count */
+.timer{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 18px rgb(0 0 0 / .08)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.timer .top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.clock{font-family:var(--display);font-weight:700;font-size:56px;line-height:.9;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.clock.over{color:var(--warn)}
+.clockmeta{font-size:13px;color:var(--muted);text-align:right}
+.prog{position:relative;height:10px;border-radius:5px;background:var(--sunk);overflow:hidden}
+.prog i{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:5px}
+.prog b{position:absolute;top:0;bottom:0;width:2px;background:var(--surface)}
+.results{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.results button{display:flex;justify-content:space-between;gap:12px;align-items:baseline;text-align:left;border:0;border-top:1px solid var(--line);background:var(--surface);color:var(--ink);padding:12px 14px;font:16px var(--body);cursor:pointer;min-height:48px}
+.results button:first-child{border-top:0}
+.results em{color:var(--muted);font-size:13px;min-width:0;overflow-wrap:anywhere;text-align:right}
+.tally{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:center}
+th{font:600 13px var(--display);letter-spacing:.03em;color:var(--muted);white-space:nowrap}
+td:first-child,th:first-child{text-align:left}
+td:first-child button{border:0;background:none;color:var(--ink);font:700 15px var(--body);padding:4px 0;cursor:pointer;text-align:left}
+td.tot{font-weight:700}
+.log{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.log div{display:flex;gap:10px}
+.log span:first-child{font-family:var(--mono);min-width:52px}
+.flag{color:var(--warn);font-weight:700}
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgb(0 0 0 / .45);z-index:20}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--surface);border-radius:16px 16px 0 0;padding-block:16px calc(16px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:14px;max-width:560px;margin:0 auto;max-height:90%;overflow:auto}
+.sheet .sci{font-style:italic;color:var(--muted);font-size:14px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg button{font:700 14px var(--body);padding:10px 4px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;min-height:44px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.stepper{display:flex;align-items:center;gap:12px}
+.stepper button{width:48px;height:48px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:700 22px var(--body);cursor:pointer}
+.stepper output{font:700 30px var(--display);min-width:44px;text-align:center;font-variant-numeric:tabular-nums}
+.bandgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bandgrid button{border:0;border-radius:12px;min-height:64px;font:700 22px var(--display);letter-spacing:.02em;cursor:pointer}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:30;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:700;font-size:15px;max-width:calc(100% - 32px)}
+/* history */
+.hist{display:flex;flex-direction:column;gap:10px}
+.hitem summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.hitem summary::-webkit-details-marker{display:none}
+.hitem .meta{font-size:14px;color:var(--muted)}
+.num{font:700 22px var(--display);font-variant-numeric:tabular-nums}
+.empty{text-align:center;padding:28px 16px;color:var(--muted)}
+.notice{font-size:14px;padding:10px 12px;border-radius:8px;background:var(--sunk);color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Contagens por ponto</div>
+      <h1>Caderno de Pontos</h1>
+    </div>
+    <nav class="tabs" aria-label="Secções">
+      <button id="tabNew" aria-pressed="true">Contagem</button>
+      <button id="tabHist" aria-pressed="false">Histórico</button>
+    </nav>
+  </header>
+
+  <!-- SETUP -->
+  <section id="vSetup" class="wrap" style="padding:0;gap:16px">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2>Ponto</h2>
+        <span class="eyebrow" id="today"></span>
+      </div>
+      <label class="f">Código do ponto
+        <input type="text" id="pointName" placeholder="P01" autocomplete="off">
+      </label>
+      <div id="locBox" class="loc empty">
+        <div class="coords">Sem localização</div>
+        <span></span>
+        <div class="src"></div>
+      </div>
+      <button class="btn primary block" id="gpsBtn">Obter posição GPS</button>
+      <div class="methods">
+        <label class="btn filebtn" for="photoIn">Foto com GPS
+          <input type="file" id="photoIn" accept="image/jpeg,image/*">
+        </label>
+        <button class="btn" id="pasteFocus">Colar coordenadas</button>
+      </div>
+      <input type="text" id="coordIn" placeholder="38.7223, -9.1393 ou link do mapa" autocomplete="off" inputmode="text" hidden>
+      <img id="thumb" class="thumb" alt="Foto do ponto" hidden>
+      <p class="hint" id="locHint">Espera até a precisão estabilizar (verde é ±15 m ou melhor). Sem sinal, usa uma foto do local ou cola coordenadas.</p>
+    </div>
+
+    <div class="card">
+      <h2>Protocolo</h2>
+      <div class="f" style="font-size:14px;font-weight:700">Duração</div>
+      <div class="chips" id="durChips"></div>
+      <div class="f" style="font-size:14px;font-weight:700">Limites das bandas (m)</div>
+      <div class="edges" id="edges"></div>
+      <div class="bandbar" id="bandPreview"></div>
+      <label class="row" style="font-size:15px;gap:8px"><input type="checkbox" id="flightChk" checked> Registar aves em voo à parte</label>
+    </div>
+
+    <button class="btn primary block" id="startBtn" style="min-height:58px;font-size:18px">Iniciar contagem</button>
+  </section>
+
+  <!-- COUNT -->
+  <section id="vCount" hidden style="display:flex;flex-direction:column;gap:16px">
+    <div class="timer">
+      <div class="top">
+        <div class="clock" id="clock">05:00</div>
+        <div class="clockmeta"><div id="countPoint">P01</div><div id="countSub"></div></div>
+      </div>
+      <div class="prog" id="prog"><i id="progFill" style="width:0"></i></div>
+      <div class="row" style="flex-wrap:nowrap">
+        <button class="btn" id="pauseBtn" style="flex:1">Pausar</button>
+        <button class="btn" id="undoBtn" style="flex:1" disabled>Anular último</button>
+        <button class="btn warn" id="endBtn" style="flex:1">Terminar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <input type="search" id="spSearch" placeholder="Procurar espécie (nome ou científico)" autocomplete="off">
+      <div class="results" id="spResults" hidden></div>
+      <div class="chips" id="recentChips"></div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2>Contagem</h2>
+        <span class="hint" id="countTotals"></span>
+      </div>
+      <div class="tally" id="tally"></div>
+      <details>
+        <summary class="hint" style="cursor:pointer">Registo minuto a minuto</summary>
+        <div class="log" id="log" style="margin-top:8px"></div>
+      </details>
+    </div>
+  </section>
+
+  <!-- FINISH -->
+  <section id="vDone" hidden style="display:flex;flex-direction:column;gap:16px">
+    <div class="card">
+      <h2>Fim da contagem</h2>
+      <div id="doneSummary" class="hint"></div>
+      <div class="tally" id="doneTally"></div>
+      <label class="f">Notas (habitat, tempo, ruído)
+        <textarea id="notesIn" placeholder="Vento fraco, céu limpo, montado com sub-bosque"></textarea>
+      </label>
+      <div class="row">
+        <button class="btn ghost" id="backBtn" style="flex:1">Voltar à contagem</button>
+        <button class="btn primary" id="saveBtn" style="flex:2">Guardar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- HISTORY -->
+  <section id="vHist" hidden style="display:flex;flex-direction:column;gap:16px">
+    <div class="row" style="justify-content:space-between">
+      <h2>Contagens guardadas</h2>
+      <div class="row"><button class="btn" id="csvBtn">CSV</button><button class="btn primary" id="sendBtn">Enviar ao Claude</button></div>
+    </div>
+    <div id="storeNote" class="notice" hidden></div>
+    <details class="card" id="bkCard">
+      <summary style="cursor:pointer;display:flex;justify-content:space-between;gap:12px;align-items:baseline"><h2>Cópia na Google Sheet</h2><span class="hint" id="bkStatus">Desligada</span></summary>
+      <label class="f">Endereço do Apps Script (termina em /exec)
+        <input type="text" id="bkUrl" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off">
+      </label>
+      <label class="f">Código secreto
+        <input type="text" id="bkToken" placeholder="o mesmo que puseste no script" autocomplete="off">
+      </label>
+      <button class="btn" id="bkNow">Guardar e copiar agora</button>
+      <p class="hint">Cada contagem guardada é copiada assim que houver rede. Sem rede, fica em espera e segue mais tarde.</p>
+    </details>
+    <div class="hist" id="histList"><div class="card empty">A carregar contagens…</div></div>
+    <textarea id="csvOut" hidden rows="8" style="font-family:var(--mono);font-size:12px"></textarea>
+  </section>
+</div>
+
+<div id="scrim" class="scrim" hidden></div>
+<div id="sheet" class="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="shName">
+  <div>
+    <h2 id="shName"></h2>
+    <div class="sci" id="shSci"></div>
+  </div>
+  <div class="seg" id="detSeg">
+    <button data-d="ouvido">Ouvido</button><button data-d="visto">Visto</button><button data-d="ambos">Visto e ouvido</button>
+  </div>
+  <div class="stepper"><button id="minus" aria-label="Menos">−</button><output id="qty">1</output><button id="plus" aria-label="Mais">+</button><span class="hint">indivíduos</span></div>
+  <div class="bandgrid" id="bandGrid"></div>
+  <button class="btn ghost" id="sheetCancel">Cancelar</button>
+</div>
+<div id="toast" class="toast" hidden role="status"></div>
+
+<script>
+(function(){
+const SPECIES=[
+["Pardal-comum","Passer domesticus"],["Melro-preto","Turdus merula"],["Toutinegra-de-barrete-preto","Sylvia atricapilla"],
+["Toutinegra-de-cabeça-preta","Curruca melanocephala"],["Chapim-real","Parus major"],["Chapim-azul","Cyanistes caeruleus"],
+["Chapim-rabilongo","Aegithalos caudatus"],["Chapim-de-poupa","Lophophanes cristatus"],["Pisco-de-peito-ruivo","Erithacus rubecula"],
+["Carriça","Troglodytes troglodytes"],["Tentilhão-comum","Fringilla coelebs"],["Pintassilgo","Carduelis carduelis"],
+["Verdilhão","Chloris chloris"],["Milheirinha","Serinus serinus"],["Pintarroxo","Linaria cannabina"],
+["Trepadeira-comum","Certhia brachydactyla"],["Trepadeira-azul","Sitta europaea"],["Estrelinha-de-cabeça-listada","Regulus ignicapilla"],
+["Felosa-comum","Phylloscopus collybita"],["Felosa-ibérica","Phylloscopus ibericus"],["Felosa-poliglota","Hippolais polyglotta"],
+["Rouxinol-bravo","Cettia cetti"],["Rouxinol-comum","Luscinia megarhynchos"],["Fuinha-dos-juncos","Cisticola juncidis"],
+["Estorninho-preto","Sturnus unicolor"],["Estorninho-malhado","Sturnus vulgaris"],["Pombo-torcaz","Columba palumbus"],
+["Pombo-doméstico","Columba livia (doméstico)"],["Rola-turca","Streptopelia decaocto"],["Rola-brava","Streptopelia turtur"],
+["Gaivota-de-patas-amarelas","Larus michahellis"],["Gaivota-d'asa-escura","Larus fuscus"],["Garça-boieira","Bubulcus ibis"],
+["Garça-real","Ardea cinerea"],["Garça-branca-pequena","Egretta garzetta"],["Cegonha-branca","Ciconia ciconia"],
+["Pato-real","Anas platyrhynchos"],["Galinha-d'água","Gallinula chloropus"],["Corvo-marinho-de-faces-brancas","Phalacrocorax carbo"],
+["Guarda-rios","Alcedo atthis"],["Poupa","Upupa epops"],["Abelharuco","Merops apiaster"],
+["Pica-pau-malhado","Dendrocopos major"],["Peto-real","Picus sharpei"],["Gaio","Garrulus glandarius"],
+["Pega-rabuda","Pica pica"],["Charneco","Cyanopica cooki"],["Gralha-preta","Corvus corone"],["Corvo","Corvus corax"],
+["Andorinha-das-chaminés","Hirundo rustica"],["Andorinha-dos-beirais","Delichon urbicum"],["Andorinhão-preto","Apus apus"],
+["Andorinhão-pálido","Apus pallidus"],["Alvéola-branca","Motacilla alba"],["Alvéola-cinzenta","Motacilla cinerea"],
+["Cartaxo-comum","Saxicola rubicola"],["Rabirruivo-preto","Phoenicurus ochruros"],["Petinha-dos-prados","Anthus pratensis"],
+["Cotovia-de-poupa","Galerida cristata"],["Trigueirão","Emberiza calandra"],["Escrevedeira-de-garganta-preta","Emberiza cirlus"],
+["Bico-de-lacre","Estrilda astrild"],["Papa-figos","Oriolus oriolus"],["Picanço-real","Lanius meridionalis"],
+["Peneireiro-vulgar","Falco tinnunculus"],["Águia-de-asa-redonda","Buteo buteo"],["Milhafre-preto","Milvus migrans"],
+["Perdiz-vermelha","Alectoris rufa"],["Cuco-canoro","Cuculus canorus"],["Mocho-galego","Athene noctua"]
+];
+const $=id=>document.getElementById(id);
+const norm=s=>s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+const pad=n=>String(n).padStart(2,"0");
+const DRAFT_KEY="cp_draft_v1", LOCAL_KEY="cp_local_counts_v1", PREF_KEY="cp_prefs_v1";
+function lsGet(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function lsDel(k){try{localStorage.removeItem(k)}catch(e){}}
+
+const prefs=Object.assign({durMin:5,edges:[25,50,100],flight:true,det:"ouvido",lastPoint:""},lsGet(PREF_KEY)||{});
+function newDraft(){return{id:"c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),point:nextPoint(prefs.lastPoint),loc:null,durMin:prefs.durMin,edges:prefs.edges.slice(),flight:prefs.flight,phase:"setup",startedAt:null,elapsedBefore:0,runStart:null,records:[],notes:""}}
+function nextPoint(p){if(!p)return"P01";const m=p.match(/^(.*?)(\d+)$/);return m?m[1]+String(+m[2]+1).padStart(m[2].length,"0"):p}
+let D=lsGet(DRAFT_KEY)||newDraft();
+const save=()=>lsSet(DRAFT_KEY,D);
+
+function bandLabels(d){const e=d.edges,L=[];let prev=0;e.forEach(x=>{L.push(prev+"–"+x+" m");prev=x});L.push(">"+prev+" m");if(d.flight)L.push("Em voo");return L}
+function bandColor(i,d){const n=d.edges.length+1;if(d.flight&&i===n)return["var(--bv)","var(--b-ink-dark)"];const pal=["--b0","--b1","--b2","--b3","--b4"];const k=Math.round(i*(4/Math.max(1,n-1)));return["var("+pal[Math.min(4,k)]+")",k<=2?"var(--b-ink-dark)":"var(--b-ink-light)"]}
+
+/* ---------- tabs / views ---------- */
+let view="count";
+function show(){
+  const hist=view==="hist";
+  $("tabNew").setAttribute("aria-pressed",String(!hist));$("tabHist").setAttribute("aria-pressed",String(hist));
+  $("vSetup").hidden=hist||D.phase!=="setup";$("vCount").hidden=hist||D.phase!=="count";$("vDone").hidden=hist||D.phase!=="done";$("vHist").hidden=!hist;
+  if(!hist){if(D.phase==="setup")renderSetup();if(D.phase==="count")renderCount();if(D.phase==="done")renderDone()}
+  else renderHist();
+}
+$("tabNew").onclick=()=>{view="count";show()};$("tabHist").onclick=()=>{view="hist";show()};
+
+/* ---------- setup ---------- */
+$("today").textContent=new Date().toLocaleDateString("pt-PT",{weekday:"short",day:"numeric",month:"short"});
+function renderSetup(){
+  $("pointName").value=D.point;
+  renderLoc();
+  const dc=$("durChips");dc.innerHTML="";
+  [3,5,10,15].forEach(m=>{const b=document.createElement("button");b.className="chip";b.textContent=m+" min";b.setAttribute("aria-pressed",String(D.durMin===m));b.onclick=()=>{D.durMin=m;save();renderSetup()};dc.appendChild(b)});
+  const ed=$("edges");ed.innerHTML="";
+  D.edges.forEach((x,i)=>{const inp=document.createElement("input");inp.type="number";inp.min="1";inp.value=x;inp.id="edge"+i;inp.setAttribute("aria-label","Limite "+(i+1)+" em metros");inp.onchange=()=>{const v=Math.max(1,parseInt(inp.value)||x);D.edges[i]=v;D.edges=[...new Set(D.edges)].sort((a,b)=>a-b);save();renderSetup()};ed.appendChild(inp)});
+  const add=document.createElement("button");add.className="chip";add.textContent="+ banda";add.disabled=D.edges.length>=4;add.onclick=()=>{D.edges.push(D.edges[D.edges.length-1]*2);save();renderSetup()};ed.appendChild(add);
+  if(D.edges.length>1){const rm=document.createElement("button");rm.className="chip";rm.textContent="− banda";rm.onclick=()=>{D.edges.pop();save();renderSetup()};ed.appendChild(rm)}
+  const bp=$("bandPreview");bp.innerHTML="";bandLabels(D).forEach((l,i)=>{const s=document.createElement("span");const[c,t]=bandColor(i,D);s.style.background=c;s.style.color=t;s.textContent=l;bp.appendChild(s)});
+  $("flightChk").checked=D.flight;
+}
+$("pointName").oninput=e=>{D.point=e.target.value.trim()||"P01";save()};
+$("flightChk").onchange=e=>{D.flight=e.target.checked;save();renderSetup()};
+function renderLoc(){
+  const box=$("locBox"),L=D.loc;
+  box.classList.toggle("empty",!L);
+  box.children[0].textContent=L?L.lat.toFixed(6)+", "+L.lon.toFixed(6):"Sem localização";
+  const accEl=box.children[1];accEl.className="";accEl.textContent="";
+  if(L&&L.acc!=null){accEl.className="acc "+(L.acc<=15?"good":L.acc>30?"bad":"");accEl.textContent="±"+Math.round(L.acc)+" m"}
+  const src=box.children[2];src.textContent="";
+  if(L){src.append(L.src+(L.time?" · "+L.time:"")+" · ");const a=document.createElement("a");a.href="https://www.openstreetmap.org/?mlat="+L.lat+"&mlon="+L.lon+"#map=17/"+L.lat+"/"+L.lon;a.target="_blank";a.rel="noopener";a.textContent="ver no mapa";src.append(a)}
+}
+
+let watchId=null,gpsT=null;
+function stopGps(msg){if(watchId!=null)navigator.geolocation.clearWatch(watchId);watchId=null;clearTimeout(gpsT);$("gpsBtn").textContent="Obter posição GPS";if(msg)toast(msg)}
+$("gpsBtn").onclick=()=>{
+  if(watchId!=null){stopGps("Posição fixada");return}
+  if(!navigator.geolocation){toast("Este browser não tem GPS");return}
+  $("gpsBtn").textContent="A melhorar… toca para fixar";
+  watchId=navigator.geolocation.watchPosition(p=>{
+    const c=p.coords;if(D.loc&&D.loc.src==="GPS"&&D.loc.acc!=null&&c.accuracy>D.loc.acc&&watchId!=null&&D.loc._w===watchId)return;
+    const t=new Date(p.timestamp);D.loc={lat:c.latitude,lon:c.longitude,acc:c.accuracy,src:"GPS",time:pad(t.getHours())+":"+pad(t.getMinutes()),_w:watchId};save();renderLoc();
+    if(c.accuracy<=8)stopGps("Posição fixada (±"+Math.round(c.accuracy)+" m)");
+  },err=>{stopGps(err.code===1?"Autorização de localização recusada. Ativa-a nas definições do browser.":"Sem sinal GPS. Tenta de novo ou usa foto/coordenadas.")},{enableHighAccuracy:true,maximumAge:0,timeout:30000});
+  gpsT=setTimeout(()=>stopGps("Posição fixada"),45000);
+};
+$("pasteFocus").onclick=()=>{const c=$("coordIn");c.hidden=false;c.focus()};
+$("coordIn").addEventListener("input",e=>{const r=parseCoords(e.target.value);if(r){D.loc={lat:r[0],lon:r[1],acc:null,src:"Coordenadas coladas"};save();renderLoc();toast("Localização definida")}});
+function parseCoords(s){
+  if(!s)return null;s=decodeURIComponent(s.trim());
+  const dms=/(\d{1,3})[°º]\s*(\d{1,2})['′]\s*([\d.]+)["″]?\s*([NS])[\s,;]+(\d{1,3})[°º]\s*(\d{1,2})['′]\s*([\d.]+)["″]?\s*([EWOL])/i.exec(s);
+  if(dms){let la=+dms[1]+dms[2]/60+dms[3]/3600,lo=+dms[5]+dms[6]/60+dms[7]/3600;if(/s/i.test(dms[4]))la=-la;if(/[wo]/i.test(dms[8]))lo=-lo;return ok(la,lo)}
+  const pats=[/@(-?\d+\.\d+),(-?\d+\.\d+)/,/[?&](?:q|ll|query|sll|daddr)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/,/geo:(-?\d+\.\d+),(-?\d+\.\d+)/,/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,/(-?\d{1,2}\.\d{3,})\s*[,;\s]\s*(-?\d{1,3}\.\d{3,})/];
+  for(const p of pats){const m=p.exec(s);if(m)return ok(+m[1],+m[2])}
+  return null;
+  function ok(a,b){return Math.abs(a)<=90&&Math.abs(b)<=180?[a,b]:null}
+}
+$("photoIn").onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  const t=$("thumb");t.src=URL.createObjectURL(f);t.hidden=false;
+  try{const g=readExifGps(await f.arrayBuffer());
+    if(g){D.loc={lat:g.lat,lon:g.lon,acc:g.acc,src:"Foto",time:g.time||""};save();renderLoc();toast("Posição lida da foto")}
+    else{$("locHint").textContent="Esta foto não trazia posição. No iPhone confirma Definições › Privacidade › Serviços de localização › Câmara; ou cola as coordenadas.";toast("Foto sem GPS")}
+  }catch(err){toast("Não consegui ler a foto")}
+  e.target.value="";
+};
+function readExifGps(buf){
+  const v=new DataView(buf);if(v.getUint16(0)!==0xFFD8)return null;
+  let o=2;while(o<v.byteLength-4){const mk=v.getUint16(o),len=v.getUint16(o+2);
+    if(mk===0xFFE1&&v.getUint32(o+4)===0x45786966)return parseTiff(o+10);
+    if((mk&0xFF00)!==0xFF00)return null;o+=2+len}
+  return null;
+  function parseTiff(t){
+    const le=v.getUint16(t)===0x4949;const u16=p=>v.getUint16(p,le),u32=p=>v.getUint32(p,le);
+    const ifd=p=>{const n=u16(p),out={};for(let i=0;i<n;i++){const e=p+2+i*12;out[u16(e)]={type:u16(e+2),count:u32(e+4),off:e+8}}return out};
+    const rat=p=>{const a=u32(p),b=u32(p+4);return b?a/b:0};
+    const val=en=>{if(!en)return null;const ptr=t+u32(en.off);
+      if(en.type===5)return Array.from({length:en.count},(_,i)=>rat(ptr+i*8));
+      if(en.type===2){let s="";const base=en.count>4?ptr:en.off;for(let i=0;i<en.count-1;i++)s+=String.fromCharCode(v.getUint8(base+i));return s}
+      return null};
+    const i0=ifd(t+u32(t+4));if(!i0[0x8825])return null;
+    const g=ifd(t+u32(i0[0x8825].off));const la=val(g[2]),lo=val(g[4]);if(!la||!lo)return null;
+    let lat=la[0]+la[1]/60+la[2]/3600,lon=lo[0]+lo[1]/60+lo[2]/3600;
+    if((val(g[1])||"N").toUpperCase()==="S")lat=-lat;if((val(g[3])||"E").toUpperCase()==="W")lon=-lon;
+    const accA=val(g[0x1F]);let time="";
+    if(i0[0x8769]){const ex=ifd(t+u32(i0[0x8769].off));const dt=val(ex[0x9003]);if(dt)time=dt.slice(11,16)}
+    return{lat,lon,acc:accA?accA[0]:null,time}
+  }
+}
+$("startBtn").onclick=()=>{
+  if(watchId!=null)stopGps();if(D.loc)delete D.loc._w;
+  D.point=$("pointName").value.trim()||D.point;
+  Object.assign(prefs,{durMin:D.durMin,edges:D.edges.slice(),flight:D.flight,lastPoint:D.point});lsSet(PREF_KEY,prefs);
+  D.phase="count";D.startedAt=new Date().toISOString();D.elapsedBefore=0;D.runStart=Date.now();save();
+  audioInit();wake();show();
+};
+
+/* ---------- count ---------- */
+let tick=null,beeped=false,detSel=prefs.det,qty=1,current=null;
+const elapsed=()=>D.elapsedBefore+(D.runStart?Date.now()-D.runStart:0);
+function renderCount(){
+  $("countPoint").textContent=D.point;
+  $("countSub").textContent=D.durMin+" min · "+(D.loc?D.loc.lat.toFixed(4)+", "+D.loc.lon.toFixed(4):"sem localização");
+  const pr=$("prog");pr.querySelectorAll("b").forEach(b=>b.remove());
+  for(let m=1;m<D.durMin;m++){const b=document.createElement("b");b.style.left=(m/D.durMin*100)+"%";pr.appendChild(b)}
+  updateClock();clearInterval(tick);tick=setInterval(updateClock,250);
+  renderRecent();renderTally($("tally"),D);renderLog();
+}
+function updateClock(){
+  if(D.phase!=="count")return;
+  const ms=elapsed(),dur=D.durMin*60000,rem=dur-ms;const s=Math.ceil(Math.abs(rem)/1000);
+  const c=$("clock");c.textContent=(rem<0?"+":"")+pad(Math.floor(s/60))+":"+pad(s%60);c.classList.toggle("over",rem<0);
+  $("progFill").style.width=Math.min(100,ms/dur*100)+"%";
+  $("pauseBtn").textContent=D.runStart?"Pausar":"Retomar";
+  if(rem<=0&&!beeped){beeped=true;beep();toast("Tempo! Registos a partir de agora ficam marcados")}
+}
+$("pauseBtn").onclick=()=>{if(D.runStart){D.elapsedBefore=elapsed();D.runStart=null}else D.runStart=Date.now();save();updateClock()};
+$("spSearch").addEventListener("input",renderResults);
+function renderResults(){
+  const q=norm($("spSearch").value.trim()),box=$("spResults");box.innerHTML="";
+  if(!q){box.hidden=true;return}
+  const hits=SPECIES.filter(([p,s])=>norm(p).includes(q)||norm(s).includes(q)).slice(0,7);
+  hits.forEach(([p,s])=>box.appendChild(resBtn(p,s)));
+  if(!hits.some(([p])=>norm(p)===q)){const raw=$("spSearch").value.trim();box.appendChild(resBtn(raw,"espécie nova",true))}
+  box.hidden=false;
+}
+function resBtn(p,s,isNew){const b=document.createElement("button");const a=document.createElement("span");a.textContent=isNew?"Adicionar «"+p+"»":p;const e=document.createElement("em");e.textContent=s;b.append(a,e);b.onclick=()=>openSheet(p,isNew?"":s);return b}
+function renderRecent(){
+  const box=$("recentChips");box.innerHTML="";const seen=[];
+  for(let i=D.records.length-1;i>=0;i--){const r=D.records[i];if(!seen.some(x=>x[0]===r.sp))seen.push([r.sp,r.sci])}
+  seen.forEach(([p,s])=>{const b=document.createElement("button");b.className="chip";b.textContent=p;b.onclick=()=>openSheet(p,s);box.appendChild(b)});
+  $("undoBtn").disabled=!D.records.length;
+}
+function openSheet(p,s){
+  current={sp:p,sci:s};qty=1;$("qty").textContent="1";$("shName").textContent=p;$("shSci").textContent=s;
+  [...$("detSeg").children].forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.d===detSel)));
+  const g=$("bandGrid");g.innerHTML="";
+  bandLabels(D).forEach((l,i)=>{const b=document.createElement("button");const[c,t]=bandColor(i,D);b.style.background=c;b.style.color=t;b.textContent=l;b.onclick=()=>addRecord(i,l);g.appendChild(b)});
+  $("scrim").hidden=false;$("sheet").hidden=false;
+}
+function closeSheet(){$("scrim").hidden=true;$("sheet").hidden=true;current=null}
+$("scrim").onclick=closeSheet;$("sheetCancel").onclick=closeSheet;
+$("detSeg").onclick=e=>{const d=e.target.dataset&&e.target.dataset.d;if(!d)return;detSel=d;prefs.det=d;lsSet(PREF_KEY,prefs);[...$("detSeg").children].forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.d===d)))};
+$("minus").onclick=()=>{qty=Math.max(1,qty-1);$("qty").textContent=qty};$("plus").onclick=()=>{qty++;$("qty").textContent=qty};
+function addRecord(bi,label){
+  const t=Math.round(elapsed()/1000);
+  D.records.push({sp:current.sp,sci:current.sci,band:bi,bandLabel:label,det:detSel,n:qty,t,over:t>D.durMin*60});
+  save();toast(current.sp+" · "+label+" · +"+qty);closeSheet();
+  $("spSearch").value="";renderResults();renderRecent();renderTally($("tally"),D);renderLog();
+}
+$("undoBtn").onclick=()=>{const r=D.records.pop();if(r){save();toast("Anulado: "+r.sp+" +"+r.n);renderRecent();renderTally($("tally"),D);renderLog()}};
+function renderTally(el,d){
+  el.innerHTML="";const labels=bandLabels(d);
+  if(!d.records.length){const p=document.createElement("p");p.className="hint";p.textContent="Ainda sem registos. Procura uma espécie acima.";el.appendChild(p);if(el.id==="tally")$("countTotals").textContent="";return}
+  const by={};d.records.forEach(r=>{(by[r.sp]=by[r.sp]||{sci:r.sci,c:labels.map(()=>0),tot:0});by[r.sp].c[r.band]+=r.n;by[r.sp].tot+=r.n});
+  const tb=document.createElement("table");const hr=document.createElement("tr");
+  ["Espécie",...labels.map(l=>l.replace(" m","")),"Total"].forEach(h=>{const th=document.createElement("th");th.textContent=h;hr.appendChild(th)});
+  const th=document.createElement("thead");th.appendChild(hr);tb.appendChild(th);const body=document.createElement("tbody");
+  let all=0;Object.keys(by).sort((a,b)=>by[b].tot-by[a].tot).forEach(sp=>{const tr=document.createElement("tr");const td=document.createElement("td");
+    if(el.id==="tally"){const b=document.createElement("button");b.textContent=sp;b.onclick=()=>openSheet(sp,by[sp].sci);td.appendChild(b)}else td.textContent=sp;
+    tr.appendChild(td);by[sp].c.forEach(n=>{const c=document.createElement("td");c.textContent=n||"·";tr.appendChild(c)});
+    const tt=document.createElement("td");tt.className="tot";tt.textContent=by[sp].tot;tr.appendChild(tt);body.appendChild(tr);all+=by[sp].tot});
+  tb.appendChild(body);el.appendChild(tb);
+  if(el.id==="tally")$("countTotals").textContent=Object.keys(by).length+" espécies · "+all+" ind.";
+}
+function renderLog(){
+  const el=$("log");el.innerHTML="";
+  D.records.slice().reverse().forEach(r=>{const d=document.createElement("div");const a=document.createElement("span");a.textContent=pad(Math.floor(r.t/60))+":"+pad(r.t%60);const b=document.createElement("span");b.textContent=r.sp+" · "+r.bandLabel+" · "+r.det+" · "+r.n;d.append(a,b);if(r.over){const f=document.createElement("span");f.className="flag";f.textContent="fora";d.append(f)}el.appendChild(d)});
+}
+let endArm=false;
+$("endBtn").onclick=()=>{
+  if(!endArm){endArm=true;$("endBtn").textContent="Confirmar";setTimeout(()=>{endArm=false;$("endBtn").textContent="Terminar"},3000);return}
+  endArm=false;$("endBtn").textContent="Terminar";D.elapsedBefore=elapsed();D.runStart=null;D.phase="done";save();clearInterval(tick);show();
+};
+
+/* ---------- done ---------- */
+function renderDone(){
+  const sp=new Set(D.records.map(r=>r.sp)).size,ind=D.records.reduce((a,r)=>a+r.n,0),s=Math.round(D.elapsedBefore/1000);
+  $("doneSummary").textContent=D.point+" · "+sp+" espécies · "+ind+" indivíduos · "+pad(Math.floor(s/60))+":"+pad(s%60)+" de contagem";
+  renderTally($("doneTally"),D);$("notesIn").value=D.notes||"";
+}
+$("notesIn").oninput=e=>{D.notes=e.target.value;save()};
+$("backBtn").onclick=()=>{D.phase="count";D.runStart=Date.now();save();show()};
+$("saveBtn").onclick=async()=>{
+  const rec={point:D.point,startedAt:D.startedAt,durMin:D.durMin,edges:D.edges,flight:D.flight,loc:D.loc,records:D.records,notes:D.notes||"",seconds:Math.round(D.elapsedBefore/1000),savedAt:new Date().toISOString()};
+  $("saveBtn").disabled=true;
+  try{
+    if(store.ok){await store.col.doc(D.id).set(rec)}
+    else{const l=lsGet(LOCAL_KEY)||{};l[D.id]=rec;lsSet(LOCAL_KEY,l);localCounts=l}
+    toast("Contagem guardada");lsDel(DRAFT_KEY);setTimeout(()=>syncBackup(),300);D=newDraft();beeped=false;view="hist";show();
+  }catch(err){toast("Não guardou: "+(err&&err.message||"erro")+". O rascunho continua aqui.")}
+  $("saveBtn").disabled=false;
+};
+
+/* ---------- storage / history ---------- */
+const store={ok:false,col:null,state:"local"};let counts={},localCounts=lsGet(LOCAL_KEY)||{};
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+function allCounts(){return Object.entries(Object.assign({},localCounts,counts)).sort((a,b)=>(b[1].startedAt||"").localeCompare(a[1].startedAt||""))}
+let delArm=null;
+function renderHist(){
+  refreshBk();
+  const note=$("storeNote");note.hidden=true;
+  const pend=Object.values(localCounts).filter(c=>!c.exported).length;note.hidden=false;note.textContent=pend?pend+(pend>1?" contagens por enviar ao Claude.":" contagem por enviar ao Claude."):"Tudo enviado. As contagens continuam guardadas neste telemóvel.";
+  if(store.state==="slow"){note.hidden=false;note.textContent="Ainda não consegui chegar às contagens guardadas. Verifica a rede."}
+  if(store.state==="error"){note.hidden=false;note.textContent="Não consegui ler as contagens da conta. As novas ficam neste browser."}
+  const list=$("histList");list.innerHTML="";const items=allCounts();
+  if(!items.length){const e=document.createElement("div");e.className="card empty";e.innerHTML="<h2>Sem contagens guardadas</h2><p class='hint' style='margin-top:6px'>Cada ponto que terminares aparece aqui, com a tabela por bandas e a localização.</p>";if(store.state==="loading")e.firstChild.textContent="A carregar contagens…";list.appendChild(e);return}
+  items.forEach(([id,c])=>{
+    const det=document.createElement("details");det.className="card hitem";
+    const sm=document.createElement("summary");const l=document.createElement("div");
+    const h=document.createElement("div");h.style.fontWeight="700";h.textContent=c.point;
+    const m=document.createElement("div");m.className="meta";const dt=new Date(c.startedAt);
+    m.textContent=dt.toLocaleDateString("pt-PT",{day:"numeric",month:"short",year:"numeric"})+" "+pad(dt.getHours())+":"+pad(dt.getMinutes())+" · "+c.durMin+" min"+(c.loc?" · "+c.loc.lat.toFixed(4)+", "+c.loc.lon.toFixed(4):"");
+    l.append(h,m);const n=document.createElement("div");n.className="num";n.textContent=new Set((c.records||[]).map(r=>r.sp)).size+" sp";const flags=[];if(!c.exported)flags.push("por enviar ao Claude");if(prefs.bkUrl&&!c.backedUp)flags.push("sem cópia na Sheet");if(flags.length){const s=document.createElement("div");s.className="meta";s.style.color="var(--warn)";s.textContent=flags.join(" · ");l.appendChild(s)}sm.append(l,n);det.appendChild(sm);
+    const tl=document.createElement("div");tl.className="tally";renderTally(tl,c);det.appendChild(tl);
+    if(c.notes){const p=document.createElement("p");p.className="hint";p.textContent=c.notes;det.appendChild(p)}
+    const del=document.createElement("button");del.className="btn ghost";del.textContent=delArm===id?"Confirmar apagar":"Apagar contagem";
+    del.onclick=async()=>{if(delArm!==id){delArm=id;del.textContent="Confirmar apagar";return}delArm=null;
+      delete localCounts[id];lsSet(LOCAL_KEY,localCounts);renderHist()};
+    det.appendChild(del);list.appendChild(det);
+  });
+}
+function csv(){
+  const head=["ponto","data","hora_inicio","lat","lon","precisao_m","fonte_loc","duracao_min","especie","nome_cientifico","banda","deteccao","n","segundo","fora_do_tempo","notas"];
+  const q=v=>{v=v==null?"":String(v);return /[",\n;]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  const rows=[head.join(",")];
+  allCounts().forEach(([,c])=>{const dt=new Date(c.startedAt);const d=dt.getFullYear()+"-"+pad(dt.getMonth()+1)+"-"+pad(dt.getDate()),h=pad(dt.getHours())+":"+pad(dt.getMinutes());
+    (c.records||[]).forEach(r=>rows.push([c.point,d,h,c.loc&&c.loc.lat,c.loc&&c.loc.lon,c.loc&&c.loc.acc,c.loc&&c.loc.src,c.durMin,r.sp,r.sci,r.bandLabel,r.det,r.n,r.t,r.over?"sim":"nao",c.notes].map(q).join(",")))});
+  return rows.join("\n");
+}
+async function giveFile(name,text,type){
+  const file=new File([text],name,{type});
+  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});return true}}catch(e){if(e&&e.name==="AbortError")return false}
+  const a=document.createElement("a");a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();a.remove();return true;
+}
+$("csvBtn").onclick=()=>giveFile("contagens-"+new Date().toISOString().slice(0,10)+".csv",csv(),"text/csv");
+let sendAll=false;
+$("sendBtn").onclick=async()=>{
+  let ids=Object.keys(localCounts).filter(id=>!localCounts[id].exported);
+  if(!ids.length){if(!sendAll){sendAll=true;toast("Nada por enviar. Toca outra vez para enviar tudo.");setTimeout(()=>sendAll=false,4000);return}ids=Object.keys(localCounts)}
+  sendAll=false;if(!ids.length){toast("Ainda não há contagens");return}
+  const payload={app:"caderno-pontos",formato:1,exportadoEm:new Date().toISOString(),contagens:ids.map(id=>{const c=Object.assign({id},localCounts[id]);delete c.exported;return c})};
+  const ok=await giveFile("pontos-"+new Date().toISOString().slice(0,10)+".json",JSON.stringify(payload,null,1),"application/json");
+  if(ok){ids.forEach(id=>localCounts[id].exported=new Date().toISOString());lsSet(LOCAL_KEY,localCounts);renderHist();toast(ids.length+" contagens exportadas")}
+};
+
+
+/* ---------- cópia na Google Sheet ---------- */
+let syncing=false;
+function bkStatus(t){$("bkStatus").textContent=t}
+function refreshBk(){
+  if(document.activeElement!==$("bkUrl"))$("bkUrl").value=prefs.bkUrl||"";if(document.activeElement!==$("bkToken"))$("bkToken").value=prefs.bkToken||"";
+  if(!prefs.bkUrl){bkStatus("Desligada");return}
+  const pend=Object.values(localCounts).filter(c=>!c.backedUp).length;
+  bkStatus(pend?pend+" em espera":(prefs.bkLast?"Em dia · "+new Date(prefs.bkLast).toLocaleString("pt-PT",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):"Ligada"));
+}
+async function syncBackup(manual){
+  if(syncing||!prefs.bkUrl)return;
+  const ids=Object.keys(localCounts).filter(id=>!localCounts[id].backedUp);
+  if(!ids.length){refreshBk();if(manual)toast("Já está tudo copiado");return}
+  if(!navigator.onLine){refreshBk();if(manual)toast("Sem rede. Copio quando voltar");return}
+  syncing=true;bkStatus("A copiar…");
+  try{
+    const body={token:prefs.bkToken||"",contagens:ids.map(id=>{const c=Object.assign({id},localCounts[id]);delete c.exported;delete c.backedUp;return c})};
+    const r=await fetch(prefs.bkUrl,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)});
+    const j=await r.json();
+    if(!j.ok)throw new Error(j.erro||"resposta inválida");
+    (j.ids||ids).forEach(id=>{if(localCounts[id])localCounts[id].backedUp=new Date().toISOString()});
+    prefs.bkLast=new Date().toISOString();lsSet(PREF_KEY,prefs);lsSet(LOCAL_KEY,localCounts);
+    if(manual)toast(ids.length+" contagens copiadas");
+  }catch(e){if(manual)toast("A cópia falhou: "+(e.message||"erro")+". Confirma o endereço e o código.")}
+  syncing=false;refreshBk();if(view==="hist")renderHist();
+}
+$("bkNow").onclick=()=>{prefs.bkUrl=$("bkUrl").value.trim();prefs.bkToken=$("bkToken").value.trim();lsSet(PREF_KEY,prefs);if(!prefs.bkUrl){refreshBk();toast("Cópia desligada");return}syncBackup(true)};
+window.addEventListener("online",()=>syncBackup());
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")syncBackup()});
+
+/* ---------- utilities ---------- */
+let toastT;function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2200)}
+let actx=null;function audioInit(){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+function beep(){if(!actx)return;try{[0,0.25,0.5].forEach(s=>{const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=1760;g.gain.value=.15;o.connect(g);g.connect(actx.destination);o.start(actx.currentTime+s);o.stop(actx.currentTime+s+.15)})}catch(e){}}
+let lock=null;async function wake(){try{if(navigator.wakeLock&&D.phase==="count")lock=await navigator.wakeLock.request("screen")}catch(e){}}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")wake()});
+if(D.phase==="count"&&elapsed()>D.durMin*60000)beeped=true;
+show();
+setTimeout(()=>syncBackup(),1500);
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+</script>
+</body>
+</html>
